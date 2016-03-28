@@ -14,9 +14,11 @@ body {background-image:url(http://blog.hostbaby.com/wp-content/uploads/2014/03/P
 <h2> Welcome Passenger {{pass_name}} !</h2>
 <form action="/passenger_history" method="post">
 
-<ul>
+
 <h2 align = "left"> Available Drivers</h2>
+
 <table width="500" border="1">
+	<ul>
 <tr>
 <th align="left">ID</th>
  <th align="left">Driver Name</th>
@@ -27,8 +29,10 @@ body {background-image:url(http://blog.hostbaby.com/wp-content/uploads/2014/03/P
  <th align="left">Cost/mile</th>
  <th align="left">Please Choose one</th>
 </tr>
-{% for n in driver_available %}
+
 <tr>
+{% for n in driver_available %}
+
   <th align="left">{{n[0]}} </th>
   <th align="left">{{n[1]}} </th>
   <th align="left">{{n[2]}} </th>
@@ -37,13 +41,16 @@ body {background-image:url(http://blog.hostbaby.com/wp-content/uploads/2014/03/P
   <th align="left">{{n[5]}} </th>
   <th align="left">{{n[6]}} </th>
   <th align="left"><input type="radio" name="driver_selected" value={{n[0]}} /> </th>
-
+</tr>
 
 {% endfor %}
-</table>
 </ul>
+</table>
 
+{% if has_driver %}
 <input type="submit" value="Submit" />
+{%	endif %}
+
 </form>
 <br />
 <a href="/passenger_page">

@@ -269,7 +269,7 @@ def passenger_history():
         session.pop('booked_time', None)
       except:
         return redirect(url_for('passenger_page'))
-    cursor3 = g.conn.execute("SELECT driver_name,license,driver_phone,L1.loc_name,L2.loc_name,booked_time,cost_mile*(distance_mile+1),time_minute FROM driverealtime T,driver_has D,route R,location L1,location L2, brand B WHERE T.driver_id=D.driver_id and T.route_id=R.route_id and R.from_loc=L1.loc_id and R.to_loc=L2.loc_id and D.brand_id=B.brand_id and pass_id='{}'".format(session['pass_id']))
+    cursor3 = g.conn.execute("SELECT driver_name,license,driver_phone,L1.loc_name,L2.loc_name,booked_time,round((cost_mile*(distance_mile+1))::numeric,2),time_minute FROM driverealtime T,driver_has D,route R,location L1,location L2, brand B WHERE T.driver_id=D.driver_id and T.route_id=R.route_id and R.from_loc=L1.loc_id and R.to_loc=L2.loc_id and D.brand_id=B.brand_id and pass_id='{}'".format(session['pass_id']))
     return render_template('passenger_history.html',passenger_name=session['pass_name'], passenger_unfinished_list=cursor3,passenger_finished_list=cursor)
 
   #match for the session part
@@ -294,7 +294,7 @@ def passenger_2history():
       except:
         return redirect(url_for('passenger_history'))
     cursor = g.conn.execute("SELECT driver_name,driver_phone,start_time,T.score,trip_id FROM trip_take T,driver_has D WHERE T.driver_id=D.driver_id and pass_id='{}' ORDER BY start_time DESC LIMIT 5".format(session['pass_id']))
-    cursor3 = g.conn.execute("SELECT driver_name,license,driver_phone,L1.loc_name,L2.loc_name,booked_time,cost_mile*(distance_mile+1),time_minute FROM driverealtime T,driver_has D,route R,location L1,location L2, brand B WHERE T.driver_id=D.driver_id and T.route_id=R.route_id and R.from_loc=L1.loc_id and R.to_loc=L2.loc_id and D.brand_id=B.brand_id and pass_id='{}'".format(session['pass_id']))
+    cursor3 = g.conn.execute("SELECT driver_name,license,driver_phone,L1.loc_name,L2.loc_name,booked_time,round((cost_mile*(distance_mile+1))::numeric,2),time_minute FROM driverealtime T,driver_has D,route R,location L1,location L2, brand B WHERE T.driver_id=D.driver_id and T.route_id=R.route_id and R.from_loc=L1.loc_id and R.to_loc=L2.loc_id and D.brand_id=B.brand_id and pass_id='{}'".format(session['pass_id']))
     return render_template('passenger_history.html',passenger_name=session['pass_name'], passenger_unfinished_list=cursor3,passenger_finished_list=cursor)
 
   #match for the session part
@@ -316,25 +316,28 @@ def passenger_select():
       cursor = g.conn.execute("SELECT route_id FROM route WHERE from_loc='{}' and to_loc='{}'".format(start_loc,end_loc))
       for row in cursor:
         route_id=row[0]
-      cursor1 = g.conn.execute("SELECT time_minute FROM route WHERE route_id='{}'".format(route_id))
-      for row in cursor1:
-        approximate_time=int(row[0]*60)
-      if not approximate_time:
-        cursor3 = g.conn.execute("SELECT distance_mile FROM route WHERE route_id='{}'".format(route_id))
-        for row in cursor3:
-          mile = row[0]
-          approximate_time = int(mile*180)
-      app_time=timedelta(seconds=approximate_time)
-      depart_string = str(request.form['departure'])
-      time_now=datetime.strptime(depart_string,'%Y-%m-%d %H:%M')
-      time_now = time_now+app_time
-      departure = str(time_now)
-      try:
-        cursor2 = g.conn.execute("SELECT T.driver_id,driver_name,score,driver_special,brand_name,volume,cost_mile FROM driverealtime T,driver_has D,brand B WHERE T.driver_id=D.driver_id and D.brand_id=B.brand_id and route_id='{}' and start_time<='{}' and end_time>='{}' and pass_id is null".format(route_id,depart_string,departure))
-        session['booked_time']=depart_string
-        return render_template('passenger_select.html',pass_name=session['pass_name'], driver_available=cursor2)
-      except:
-        return redirect(url_for('passenger_page'))
+        cursor1 = g.conn.execute("SELECT time_minute FROM route WHERE route_id='{}'".format(route_id))
+        for row in cursor1:
+          approximate_time=int(row[0]*60)
+        app_time=timedelta(seconds=approximate_time)
+        depart_string = str(request.form['departure'])
+        try:
+          time_now=datetime.strptime(depart_string,'%Y-%m-%d %H:%M')
+        except:
+          return redirect(url_for('passenger_page'))
+        time_now = time_now+app_time
+        departure = str(time_now)
+        try:
+          cursor2 = g.conn.execute("SELECT T.driver_id,driver_name,score,driver_special,brand_name,volume,cost_mile FROM driverealtime T,driver_has D,brand B WHERE T.driver_id=D.driver_id and D.brand_id=B.brand_id and route_id='{}' and start_time<='{}' and end_time>='{}' and pass_id is null".format(route_id,depart_string,departure))
+          cursor3 = g.conn.execute("SELECT * FROM driverealtime WHERE route_id='{}' and start_time<='{}' and end_time>='{}' and pass_id is null".format(route_id,depart_string,departure))
+          has_driver=False
+          for rows in cursor3:
+            has_driver = True
+            session['booked_time']=depart_string
+          return render_template('passenger_select.html',pass_name=session['pass_name'], driver_available=cursor2, has_driver=has_driver)
+        except:
+          return redirect(url_for('passenger_page'))
+      return redirect(url_for('passenger_page'))
     return redirect(url_for('passenger_page'))
   return redirect(url_for('passenger'))
 
